@@ -36,8 +36,7 @@ class KucoinAPIClient {
 
     async log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
-        const accountPrefix = `[Account
-         ${this.accountIndex + 1}]`;
+        const accountPrefix = `[Pemulung ${this.accountIndex + 1}]`;
         const ipPrefix = this.proxyIP ? `[${this.proxyIP}]` : '[Unknown IP]';
         let logMessage = `[${timestamp}] ${accountPrefix}${ipPrefix} ${msg}`;
         
@@ -146,9 +145,9 @@ class KucoinAPIClient {
             const result = await this.increaseGold(cookie, increment, currentMolecule, proxyAgent);
             if (result.success) {
                 totalPoints += increment;
-                await this.log(`Successfully increased gold, added ${result.data.data} sâu | Total gold increased ${currentMolecule} sâu`, 'success');
+                await this.log(`Successfully increased gold, added ${result.data.data} applied| Total gold increased ${currentMolecule} applied`, 'success');
             } else {
-                await this.log(`Không thể bón sâu: ${result.error}`, 'error');
+                await this.log(`Cannot fertilize deeply: ${result.error}`, 'error');
             }
 
             await this.countdown(3);
@@ -207,7 +206,7 @@ async function main() {
             }
 
             await Promise.allSettled(workerPromises);
-            console.log(`completed. Waiting for new tasks.... ${remainingAccounts} Account. next batch Account...`.green);
+            console.log(`Completed. Waiting for new tasks.... ${remainingAccounts} Account. Next Account...`.green);
         }
 
         console.log('All done. Rest 300 seconds...');
