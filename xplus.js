@@ -4,19 +4,19 @@ const axios = require('axios');
 const colors = require('colors');
 const FormData = require('form-data');
 const { HttpsProxyAgent } = require('https-proxy-agent');
-const { Worker, isMainThread, workerData, parentPort } = require('worker_threads');
+const { Worker, isMainThread, workerData } = require('worker_threads');
 
 class KucoinAPIClient {
     constructor(accountIndex = 0) {
         this.headers = {
             "Accept": "application/json",
             "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Language": "vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5",
             "Origin": "https://www.kucoin.com",
-            "Referer": "https://www.kucoin.com/miniapp/tap-game",
-            "Sec-Ch-Ua": '\"Not/A)Brand\";v=\"99\", \"Google Chrome\";v=\"115\", \"Chromium\";v=\"115\"',
+            "Referer": "https://www.kucoin.com/miniapp/tap-game?inviterUserId=376905749&rcode=QBSLTEH5",
+            "Sec-Ch-Ua": '"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115"',
             "Sec-Ch-Ua-Mobile": "?1",
-            "Sec-Ch-Ua-Platform": '\"Android\"',
+            "Sec-Ch-Ua-Platform": '"Android"',
             "Sec-Fetch-Dest": "empty",
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-origin",
@@ -29,14 +29,15 @@ class KucoinAPIClient {
     static loadProxies() {
         const proxyFile = path.join(__dirname, 'proxy.txt');
         return fs.readFileSync(proxyFile, 'utf8')
-            .replace(/\\r/g, '')
-            .split('\\n')
+            .replace(/\r/g, '')
+            .split('\n')
             .filter(Boolean);
     }
 
     async log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
-        const accountPrefix = `[Account ${this.accountIndex + 1}]`;
+        const accountPrefix = `[Account
+         ${this.accountIndex + 1}]`;
         const ipPrefix = this.proxyIP ? `[${this.proxyIP}]` : '[Unknown IP]';
         let logMessage = `[${timestamp}] ${accountPrefix}${ipPrefix} ${msg}`;
         
@@ -119,7 +120,7 @@ class KucoinAPIClient {
                 throw new Error(`Unable to check proxy IP. Status code: ${response.status}`);
             }
         } catch (error) {
-            throw new Error(`Error checking proxy IP: ${error.message}`);
+            throw new Error(`Error khi kiểm tra IP của proxy: ${error.message}`);
         }
     }
 
@@ -133,7 +134,7 @@ class KucoinAPIClient {
             return;
         }
         
-        await this.log(`Starting processing`, 'info');
+        await this.log(`MULAI GENGS`, 'info');
         
         const points = this.generateRandomPoints(3000, 55);
         let totalPoints = 0;
@@ -145,16 +146,17 @@ class KucoinAPIClient {
             const result = await this.increaseGold(cookie, increment, currentMolecule, proxyAgent);
             if (result.success) {
                 totalPoints += increment;
-                await this.log(`Successfully increased gold, added ${result.data.data} | Remaining ${currentMolecule}`, 'success');
+                await this.log(`Successfully increased gold, added ${result.data.data} sâu | Total gold increased ${currentMolecule} sâu`, 'success');
             } else {
-                await this.log(`Failed to increase gold: ${result.error}`, 'error');
+                await this.log(`Không thể bón sâu: ${result.error}`, 'error');
             }
 
             await this.countdown(3);
         }
 
         await this.log(`Total gold increased: ${totalPoints}`, 'info');
-        await this.log(`Completed processing account ${this.accountIndex + 1}`, 'success');
+        await this.log(`Hoàn thành xử lý Account
+             ${this.accountIndex + 1}`, 'success');
     }
 }
 
@@ -168,8 +170,8 @@ async function workerFunction(workerData) {
 async function main() {
     const dataFile = path.join(__dirname, 'data.txt');
     const cookies = fs.readFileSync(dataFile, 'utf8')
-        .replace(/\\r/g, '')
-        .split('\\n')
+        .replace(/\r/g, '')
+        .split('\n')
         .filter(Boolean);
 
     const proxies = KucoinAPIClient.loadProxies();
@@ -205,11 +207,14 @@ async function main() {
             }
 
             await Promise.allSettled(workerPromises);
-            console.log(`Completed processing ${remainingAccounts} accounts. Moving to the next batch...`.green);
+            console.log(`Processing completed. Waiting for new tasks.... ${remainingAccounts} Account
+                . next batch Account
+                 next...`.green);
         }
 
-        console.log('Processing completed. Waiting for new tasks...');
-		await new Promise(resolve => setTimeout(resolve, 300000));
+        console.log('All done Account
+            . Rest 300 seconds...');
+        await new Promise(resolve => setTimeout(resolve, 300000));
     }
 }
 
@@ -218,3 +223,4 @@ if (isMainThread) {
 } else {
     workerFunction(workerData);
 }
+
