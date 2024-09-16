@@ -207,13 +207,10 @@ async function main() {
             }
 
             await Promise.allSettled(workerPromises);
-            console.log(`Processing completed. Waiting for new tasks.... ${remainingAccounts} Account
-                . next batch Account
-                 next...`.green);
+            console.log(`completed. Waiting for new tasks.... ${remainingAccounts} Account. next batch Account...`.green);
         }
 
-        console.log('All done Account
-            . Rest 300 seconds...');
+        console.log('All done. Rest 300 seconds...');
         await new Promise(resolve => setTimeout(resolve, 300000));
     }
 }
