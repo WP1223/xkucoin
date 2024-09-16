@@ -209,8 +209,12 @@ async function main() {
         }
 
         console.log('Processing completed. Waiting for new tasks...');
+		await new Promise(resolve => setTimeout(resolve, 300000));
     }
 }
 
-main().catch(console.error);
-
+if (isMainThread) {
+    main().catch(console.error);
+} else {
+    workerFunction(workerData);
+}
