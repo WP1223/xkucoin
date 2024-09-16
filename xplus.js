@@ -213,6 +213,4 @@ async function main() {
 }
 
 main().catch(console.error);
-} else {
-    workerFunction(workerData);
-}
+
