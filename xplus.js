@@ -3,7 +3,6 @@ const path = require('path');
 const axios = require('axios');
 const colors = require('colors');
 const FormData = require('form-data');
-const { HttpsProxyAgent } = require('https-proxy-agent');
 const { Worker, isMainThread, workerData } = require('worker_threads');
 
 class KucoinAPIClient {
@@ -23,22 +22,12 @@ class KucoinAPIClient {
             "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36"
         };
         this.accountIndex = accountIndex;
-        this.proxyIP = null;
-    }
-
-    static loadProxies() {
-        const proxyFile = path.join(__dirname, 'proxy.txt');
-        return fs.readFileSync(proxyFile, 'utf8')
-            .replace(/\r/g, '')
-            .split('\n')
-            .filter(Boolean);
     }
 
     async log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
         const accountPrefix = `[Tài khoản ${this.accountIndex + 1}]`;
-        const ipPrefix = this.proxyIP ? `[${this.proxyIP}]` : '[Unknown IP]';
-        let logMessage = `[${timestamp}] ${accountPrefix}${ipPrefix} ${msg}`;
+        let logMessage = `[${timestamp}] ${accountPrefix} ${msg}`;
         
         switch(type) {
             case 'success':
@@ -82,7 +71,7 @@ class KucoinAPIClient {
         return points;
     }
 
-    async increaseGold(cookie, increment, molecule, proxyAgent) {
+    async increaseGold(cookie, increment, molecule) {
         const url = "https://www.kucoin.com/_api/xkucoin/platform-telebot/game/gold/increase?lang=en_US";
         
         const formData = new FormData();
@@ -96,8 +85,7 @@ class KucoinAPIClient {
 
         try {
             const response = await axios.post(url, formData, { 
-                headers,
-                httpsAgent: proxyAgent
+                headers
             });
             if (response.status === 200) {
                 return { success: true, data: response.data };
@@ -109,30 +97,7 @@ class KucoinAPIClient {
         }
     }
 
-    async checkProxyIP(proxy) {
-        try {
-            const proxyAgent = new HttpsProxyAgent(proxy);
-            const response = await axios.get('https://api.ipify.org?format=json', { httpsAgent: proxyAgent });
-            if (response.status === 200) {
-                return response.data.ip;
-            } else {
-                throw new Error(`Không thể kiểm tra IP của proxy. Status code: ${response.status}`);
-            }
-        } catch (error) {
-            throw new Error(`Error khi kiểm tra IP của proxy: ${error.message}`);
-        }
-    }
-
-    async processAccount(cookie, proxy) {
-        const proxyAgent = new HttpsProxyAgent(proxy);
-        
-        try {
-            this.proxyIP = await this.checkProxyIP(proxy);
-        } catch (error) {
-            await this.log(`Không thể kiểm tra IP của proxy: ${error.message}`, 'warning');
-            return;
-        }
-        
+    async processAccount(cookie) {
         await this.log(`Bắt đầu xử lý`, 'info');
         
         const points = this.generateRandomPoints(3000, 55);
@@ -142,7 +107,7 @@ class KucoinAPIClient {
         for (let j = 0; j < points.length; j++) {
             const increment = points[j];
             currentMolecule -= increment;           
-            const result = await this.increaseGold(cookie, increment, currentMolecule, proxyAgent);
+            const result = await this.increaseGold(cookie, increment, currentMolecule);
             if (result.success) {
                 totalPoints += increment;
                 await this.log(`Cho ăn thành công, đã bón được ${result.data.data} sâu | Còn lại ${currentMolecule} sâu`, 'success');
@@ -159,9 +124,9 @@ class KucoinAPIClient {
 }
 
 async function workerFunction(workerData) {
-    const { cookie, proxy, accountIndex } = workerData;
+    const { cookie, accountIndex } = workerData;
     const client = new KucoinAPIClient(accountIndex);
-    await client.processAccount(cookie, proxy);
+    await client.processAccount(cookie);
     parentPort.postMessage('done');
 }
 
@@ -172,8 +137,7 @@ async function main() {
         .split('\n')
         .filter(Boolean);
 
-    const proxies = KucoinAPIClient.loadProxies();
-    const maxThreads = 10;
+    const maxThreads = 1;
     const timeout = 10 * 60 * 1000;
 
     while (true) {
@@ -184,9 +148,8 @@ async function main() {
 
             for (let j = 0; j < remainingAccounts; j++) {
                 const cookie = cookies[i + j];
-                const proxy = proxies[(i + j) % proxies.length];
                 const worker = new Worker(__filename, {
-                    workerData: { cookie, proxy, accountIndex: i + j }
+                    workerData: { cookie, accountIndex: i + j }
                 });
 
                 const workerPromise = new Promise((resolve, reject) => {
