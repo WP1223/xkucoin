@@ -36,7 +36,7 @@ class KucoinAPIClient {
 
     async log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
-        const accountPrefix = `[Tài khoản ${this.accountIndex + 1}]`;
+        const accountPrefix = `[Account ${this.accountIndex + 1}]`;
         const ipPrefix = this.proxyIP ? `[${this.proxyIP}]` : '[Unknown IP]';
         let logMessage = `[${timestamp}] ${accountPrefix}${ipPrefix} ${msg}`;
         
@@ -119,7 +119,7 @@ class KucoinAPIClient {
                 throw new Error(`Cannot check the IP of the proxy. Status code: ${response.status}`);
             }
         } catch (error) {
-            throw new Error(`Error khi kiểm tra IP của proxy: ${error.message}`);
+            throw new Error(`Error when checking proxy IP: ${error.message}`);
         }
     }
 
@@ -205,10 +205,10 @@ async function main() {
             }
 
             await Promise.allSettled(workerPromises);
-            console.log(`Đã hoàn thành xử lý ${remainingAccounts} tài khoản. Chuyển sang nhóm tài khoản tiếp theo...`.green);
+            console.log(`Processing completed ${remainingAccounts} account. Move to the next account group...`.green);
         }
 
-        console.log('Đã xử lý xong tất cả tài khoản. Nghỉ 300 giây...');
+        console.log('All accounts have been processed. Rest 300 seconds...');
         await new Promise(resolve => setTimeout(resolve, 300000));
     }
 }
