@@ -36,7 +36,7 @@ class KucoinAPIClient {
 
     async log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
-        const accountPrefix = `[Account ${this.accountIndex + 1}]`;
+        const accountPrefix = `[Tài khoản ${this.accountIndex + 1}]`;
         const ipPrefix = this.proxyIP ? `[${this.proxyIP}]` : '[Unknown IP]';
         let logMessage = `[${timestamp}] ${accountPrefix}${ipPrefix} ${msg}`;
         
@@ -116,10 +116,10 @@ class KucoinAPIClient {
             if (response.status === 200) {
                 return response.data.ip;
             } else {
-                throw new Error(`Cannot check the IP of the proxy. Status code: ${response.status}`);
+                throw new Error(`Không thể kiểm tra IP của proxy. Status code: ${response.status}`);
             }
         } catch (error) {
-            throw new Error(`Error when checking proxy IP: ${error.message}`);
+            throw new Error(`Error khi kiểm tra IP của proxy: ${error.message}`);
         }
     }
 
@@ -129,11 +129,11 @@ class KucoinAPIClient {
         try {
             this.proxyIP = await this.checkProxyIP(proxy);
         } catch (error) {
-            await this.log(`Cannot check the IP of the proxy: ${error.message}`, 'warning');
+            await this.log(`Không thể kiểm tra IP của proxy: ${error.message}`, 'warning');
             return;
         }
         
-        await this.log(`Total gold increased: ${totalPoints}`, 'info');
+        await this.log(`Bắt đầu xử lý`, 'info');
         
         const points = this.generateRandomPoints(3000, 55);
         let totalPoints = 0;
@@ -145,16 +145,16 @@ class KucoinAPIClient {
             const result = await this.increaseGold(cookie, increment, currentMolecule, proxyAgent);
             if (result.success) {
                 totalPoints += increment;
-                await this.log(`Successfully fed, added ${result.data.data} gold | Remaining ${currentMolecule} gold`, 'success');
+                await this.log(`Cho ăn thành công, đã bón được ${result.data.data} sâu | Còn lại ${currentMolecule} sâu`, 'success');
             } else {
-                await this.log(`Cannot feed gold: ${result.error}`, 'error');
+                await this.log(`Không thể bón sâu: ${result.error}`, 'error');
             }
 
             await this.countdown(3);
         }
 
-        await this.log(`Total gold increased: ${totalPoints}`, 'info');
-        await this.log(`Finished processing account ${this.accountIndex + 1}`, 'success');
+        await this.log(`Tổng số gold đã tăng: ${totalPoints}`, 'info');
+        await this.log(`Hoàn thành xử lý tài khoản ${this.accountIndex + 1}`, 'success');
     }
 }
 
@@ -193,22 +193,22 @@ async function main() {
                     worker.on('message', resolve);
                     worker.on('error', reject);
                     worker.on('exit', (code) => {
-                        if (code !== 0) reject(new Error(`Thread stopped with code ${code}`));
+                        if (code !== 0) reject(new Error(`Luồng bị dừng với mã ${code}`));
                     });
                 });
 
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Thread processing time expired')), timeout)
+                    setTimeout(() => reject(new Error('Luồng hết thời gian xử lý')), timeout)
                 );
 
                 workerPromises.push(Promise.race([workerPromise, timeoutPromise]));
             }
 
             await Promise.allSettled(workerPromises);
-            console.log(`Processing completed ${remainingAccounts} account. Move to the next account group...`.green);
+            console.log(`Đã hoàn thành xử lý ${remainingAccounts} tài khoản. Chuyển sang nhóm tài khoản tiếp theo...`.green);
         }
 
-        console.log('All accounts have been processed. Rest 300 seconds...');
+        console.log('Đã xử lý xong tất cả tài khoản. Nghỉ 300 giây...');
         await new Promise(resolve => setTimeout(resolve, 300000));
     }
 }
