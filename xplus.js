@@ -26,7 +26,7 @@ class KucoinAPIClient {
 
     async log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
-        const accountPrefix = `[Tài khoản ${this.accountIndex + 1}]`;
+        const accountPrefix = `[Pemulung ${this.accountIndex + 1}]`;
         let logMessage = `[${timestamp}] ${accountPrefix} ${msg}`;
         
         switch(type) {
@@ -98,7 +98,7 @@ class KucoinAPIClient {
     }
 
     async processAccount(cookie) {
-        await this.log(`Bắt đầu xử lý`, 'info');
+        await this.log(`Start Mulung`, 'info');
         
         const points = this.generateRandomPoints(3000, 55);
         let totalPoints = 0;
@@ -110,16 +110,16 @@ class KucoinAPIClient {
             const result = await this.increaseGold(cookie, increment, currentMolecule);
             if (result.success) {
                 totalPoints += increment;
-                await this.log(`Cho ăn thành công, đã bón được ${result.data.data} sâu | Còn lại ${currentMolecule} sâu`, 'success');
+                await this.log(`Successfully fed, added  ${result.data.data} gold  | Remaining ${currentMolecule} gold `, 'success');
             } else {
-                await this.log(`Không thể bón sâu: ${result.error}`, 'error');
+                await this.log(`Cannot fertilize deeply: ${result.error}`, 'error');
             }
 
             await this.countdown(3);
         }
 
-        await this.log(`Tổng số gold đã tăng: ${totalPoints}`, 'info');
-        await this.log(`Hoàn thành xử lý tài khoản ${this.accountIndex + 1}`, 'success');
+        await this.log(`Total gold increased: ${totalPoints}`, 'info');
+        await this.log(`Complete ${this.accountIndex + 1}`, 'success');
     }
 }
 
@@ -156,22 +156,22 @@ async function main() {
                     worker.on('message', resolve);
                     worker.on('error', reject);
                     worker.on('exit', (code) => {
-                        if (code !== 0) reject(new Error(`Luồng bị dừng với mã ${code}`));
+                        if (code !== 0) reject(new Error(`stopped with code ${code}`));
                     });
                 });
 
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Luồng hết thời gian xử lý')), timeout)
+                    setTimeout(() => reject(new Error('account. Move to the next account group...')), timeout)
                 );
 
                 workerPromises.push(Promise.race([workerPromise, timeoutPromise]));
             }
 
             await Promise.allSettled(workerPromises);
-            console.log(`Đã hoàn thành xử lý ${remainingAccounts} tài khoản. Chuyển sang nhóm tài khoản tiếp theo...`.green);
+            console.log(`Processing completed ${remainingAccounts} account. Move to the next pemulung...`.green);
         }
 
-        console.log('Đã xử lý xong tất cả tài khoản. Nghỉ 300 giây...');
+        console.log('All pemulung have been tepar. Ngaso 300 seconds...');
         await new Promise(resolve => setTimeout(resolve, 300000));
     }
 }
