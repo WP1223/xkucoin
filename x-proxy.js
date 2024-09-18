@@ -36,7 +36,7 @@ class KucoinAPIClient {
 
     async log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
-        const accountPrefix = `[Tài khoản ${this.accountIndex + 1}]`;
+        const accountPrefix = `[Budak ${this.accountIndex + 1}]`;
         const ipPrefix = this.proxyIP ? `[${this.proxyIP}]` : '[Unknown IP]';
         let logMessage = `[${timestamp}] ${accountPrefix}${ipPrefix} ${msg}`;
         
@@ -133,7 +133,7 @@ class KucoinAPIClient {
             return;
         }
         
-        await this.log(`Mulai memproses`, 'info');
+        await this.log(`Mulai Kerja`, 'info');
         
         const points = this.generateRandomPoints(3000, 55);
         let totalPoints = 0;
@@ -145,15 +145,15 @@ class KucoinAPIClient {
             const result = await this.increaseGold(cookie, increment, currentMolecule, proxyAgent);
             if (result.success) {
                 totalPoints += increment;
-                await this.log(`Berhasil memberi makan, menambahkan ${result.data.data} gold | Tersisa ${currentMolecule} gold`, 'success');
+                await this.log(`Sukses, jumlah bertambah menjadi ${result.data.data} gold | Tersisa ${currentMolecule} gold`, 'success');
             } else {
-                await this.log(`Tidak bisa memberi makan: ${result.error}`, 'error');
+                await this.log(`Gagal tap-tap layar: ${result.error}`, 'error');
             }
 
             await this.countdown(3);
         }
 
-        await this.log(`Total gold telah meningkat: ${totalPoints}`, 'info');
+        await this.log(`Total gold yang telah ditambahkan: ${totalPoints}`, 'info');
         await this.log(`Pemrosesan akun lengkap ${this.accountIndex + 1}`, 'success');
     }
 }
@@ -205,10 +205,10 @@ async function main() {
             }
 
             await Promise.allSettled(workerPromises);
-            console.log(`Pemrosesan selesai ${remainingAccounts} akun. Beralih ke grup akun berikutnya...`.green);
+            console.log(`Pemrosesan selesai ${remainingAccounts} akun. Beralih ke akun berikutnya...`.green);
         }
 
-        console.log('Ngaso lur, capek. Istirahat 300 detik ...');
+        console.log('Ngaso lur, capek. Istirahat bentar 300 detik ...');
         await new Promise(resolve => setTimeout(resolve, 300000));
     }
 }
