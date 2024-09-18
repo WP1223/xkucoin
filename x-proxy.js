@@ -145,7 +145,7 @@ class KucoinAPIClient {
             const result = await this.increaseGold(cookie, increment, currentMolecule, proxyAgent);
             if (result.success) {
                 totalPoints += increment;
-                await this.log(`Sukses, jumlah bertambah menjadi ${result.data.data} gold | Tersisa ${currentMolecule} gold`, 'success');
+                await this.log(`Sukses, jumlah bertambah menjadi ${result.data.data} gold | Tersisa ${currentMolecule} dari ${totalPoints}`, 'success');
             } else {
                 await this.log(`Gagal tap-tap layar: ${result.error}`, 'error');
             }
