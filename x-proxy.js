@@ -2,12 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const colors = require('colors');
-const readline = require('readline');
 const FormData = require('form-data');
 const { HttpsProxyAgent } = require('https-proxy-agent');
+const { Worker, isMainThread, workerData } = require('worker_threads');
 
 class KucoinAPIClient {
-    constructor() {
+    constructor(accountIndex = 0) {
         this.headers = {
             "Accept": "application/json",
             "Accept-Encoding": "gzip, deflate, br",
@@ -22,10 +22,11 @@ class KucoinAPIClient {
             "Sec-Fetch-Site": "same-origin",
             "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36"
         };
-        this.proxies = this.loadProxies();
+        this.accountIndex = accountIndex;
+        this.proxyIP = null;
     }
 
-    loadProxies() {
+    static loadProxies() {
         const proxyFile = path.join(__dirname, 'proxy.txt');
         return fs.readFileSync(proxyFile, 'utf8')
             .replace(/\r/g, '')
@@ -33,35 +34,31 @@ class KucoinAPIClient {
             .filter(Boolean);
     }
 
-    log(msg, type = 'info') {
+    async log(msg, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
+        const accountPrefix = `[Tài khoản ${this.accountIndex + 1}]`;
+        const ipPrefix = this.proxyIP ? `[${this.proxyIP}]` : '[Unknown IP]';
+        let logMessage = `[${timestamp}] ${accountPrefix}${ipPrefix} ${msg}`;
+        
         switch(type) {
             case 'success':
-                console.log(`[${timestamp}] [*] ${msg}`.green);
+                console.log(logMessage.green);
                 break;
-            case 'custom':
-                console.log(`[${timestamp}] [*] ${msg}`.magenta);
-                break;        
             case 'error':
-                console.log(`[${timestamp}] [!] ${msg}`.red);
+                console.log(logMessage.red);
                 break;
             case 'warning':
-                console.log(`[${timestamp}] [*] ${msg}`.yellow);
+                console.log(logMessage.yellow);
                 break;
             default:
-                console.log(`[${timestamp}] [*] ${msg}`.blue);
+                console.log(logMessage.blue);
         }
     }
 
     async countdown(seconds) {
         for (let i = seconds; i > 0; i--) {
-            const timestamp = new Date().toLocaleTimeString();
-            readline.cursorTo(process.stdout, 0);
-            process.stdout.write(`[${timestamp}] [*] Chờ ${i} giây để tiếp tục...`);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        readline.cursorTo(process.stdout, 0);
-        readline.clearLine(process.stdout, 0);
     }
 
     generateRandomPoints(totalPoints, numRequests) {
@@ -119,69 +116,105 @@ class KucoinAPIClient {
             if (response.status === 200) {
                 return response.data.ip;
             } else {
-                throw new Error(`Không thể kiểm tra IP của proxy. Status code: ${response.status}`);
+                throw new Error(`Proxy IP tidak dapat diuji. Status code: ${response.status}`);
             }
         } catch (error) {
-            throw new Error(`Error khi kiểm tra IP của proxy: ${error.message}`);
+            throw new Error(`Kesalahan saat memeriksa proxy IP: ${error.message}`);
         }
     }
 
-    async main() {
-        const dataFile = path.join(__dirname, 'data.txt');
-        const cookies = fs.readFileSync(dataFile, 'utf8')
-            .replace(/\r/g, '')
-            .split('\n')
-            .filter(Boolean);
+    async processAccount(cookie, proxy) {
+        const proxyAgent = new HttpsProxyAgent(proxy);
+        
+        try {
+            this.proxyIP = await this.checkProxyIP(proxy);
+        } catch (error) {
+            await this.log(`Proxy IP tidak dapat diuji: ${error.message}`, 'warning');
+            return;
+        }
+        
+        await this.log(`Mulai memproses`, 'info');
+        
+        const points = this.generateRandomPoints(3000, 55);
+        let totalPoints = 0;
+        let currentMolecule = 3000;
 
-        while (true) {
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i];
-                const proxy = this.proxies[i];
-                const proxyAgent = new HttpsProxyAgent(proxy);
-                
-                let proxyIP = "Unknown";
-                try {
-                    proxyIP = await this.checkProxyIP(proxy);
-                } catch (error) {
-                    this.log(`Không thể kiểm tra IP của proxy: ${error.message}`, 'warning');
-                    continue;
-                }
-                
-                console.log(`========== Tài khoản ${i + 1} | ip: ${proxyIP} ==========`);
-                
-                const points = this.generateRandomPoints(3000, 55);
-                let totalPoints = 0;
-                let currentMolecule = 3000;
-
-                for (let j = 0; j < points.length; j++) {
-                    const increment = points[j];
-                    currentMolecule -= increment; 
-
-                    this.log(`Lần ${j + 1}: Bón ${increment} sâu cho ếch...`, 'info');
-                    
-                    const result = await this.increaseGold(cookie, increment, currentMolecule, proxyAgent);
-                    if (result.success) {
-                        this.log(`Cho ăn thành công, đã bón được ${result.data.data} sâu`, 'success');
-                        totalPoints += increment;
-                        this.log(`Số sâu còn lại: ${currentMolecule}`, 'custom');
-                    } else {
-                        this.log(`Không thể bón sâu: ${result.error}`, 'error');
-                    }
-
-                    await this.countdown(3);
-                }
-
-                this.log(`Tổng số gold đã tăng: ${totalPoints}`, 'custom');
-                await new Promise(resolve => setTimeout(resolve, 5000));
+        for (let j = 0; j < points.length; j++) {
+            const increment = points[j];
+            currentMolecule -= increment;           
+            const result = await this.increaseGold(cookie, increment, currentMolecule, proxyAgent);
+            if (result.success) {
+                totalPoints += increment;
+                await this.log(`Berhasil memberi makan, menambahkan ${result.data.data} gold | Tersisa ${currentMolecule} gold`, 'success');
+            } else {
+                await this.log(`Tidak bisa memberi makan: ${result.error}`, 'error');
             }
 
-            await this.countdown(300);
+            await this.countdown(3);
         }
+
+        await this.log(`Total gold telah meningkat: ${totalPoints}`, 'info');
+        await this.log(`Pemrosesan akun lengkap ${this.accountIndex + 1}`, 'success');
     }
 }
 
-const client = new KucoinAPIClient();
-client.main().catch(err => {
-    client.log(err.message, 'error');
-    process.exit(1);
-});
+async function workerFunction(workerData) {
+    const { cookie, proxy, accountIndex } = workerData;
+    const client = new KucoinAPIClient(accountIndex);
+    await client.processAccount(cookie, proxy);
+    parentPort.postMessage('done');
+}
+
+async function main() {
+    const dataFile = path.join(__dirname, 'data.txt');
+    const cookies = fs.readFileSync(dataFile, 'utf8')
+        .replace(/\r/g, '')
+        .split('\n')
+        .filter(Boolean);
+
+    const proxies = KucoinAPIClient.loadProxies();
+    const maxThreads = 10;
+    const timeout = 10 * 60 * 1000;
+
+    while (true) {
+        for (let i = 0; i < cookies.length; i += maxThreads) {
+            const workerPromises = [];
+
+            const remainingAccounts = Math.min(maxThreads, cookies.length - i);
+
+            for (let j = 0; j < remainingAccounts; j++) {
+                const cookie = cookies[i + j];
+                const proxy = proxies[(i + j) % proxies.length];
+                const worker = new Worker(__filename, {
+                    workerData: { cookie, proxy, accountIndex: i + j }
+                });
+
+                const workerPromise = new Promise((resolve, reject) => {
+                    worker.on('message', resolve);
+                    worker.on('error', reject);
+                    worker.on('exit', (code) => {
+                        if (code !== 0) reject(new Error(`Task dihentikan dengan kode ${code}`));
+                    });
+                });
+
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Request time out')), timeout)
+                );
+
+                workerPromises.push(Promise.race([workerPromise, timeoutPromise]));
+            }
+
+            await Promise.allSettled(workerPromises);
+            console.log(`Pemrosesan selesai ${remainingAccounts} akun. Beralih ke grup akun berikutnya...`.green);
+        }
+
+        console.log('Ngaso lur, capek. Istirahat 300 detik ...');
+        await new Promise(resolve => setTimeout(resolve, 300000));
+    }
+}
+
+if (isMainThread) {
+    main().catch(console.error);
+} else {
+    workerFunction(workerData);
+}
